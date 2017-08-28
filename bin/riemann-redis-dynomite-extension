@@ -1,0 +1,99 @@
+#!/usr/bin/env ruby
+
+# Gathers redis zset, hashes lengths for given whitelist (by default yprofile.*) of collection and submits them to Riemann.
+
+require 'riemann/tools'
+
+class Riemann::Tools::RedisDynamoExtension
+  include Riemann::Tools
+  require 'redis'
+
+  opt :redis_host, "Redis hostname", :default => 'localhost'
+  opt :redis_port, "Redis port", :default => 6379
+  opt :redis_password, "Redis password", :default => ''
+  opt :redis_url, "Redis URL", :default => ''
+  opt :redis_socket, "Redis socket", :default => ''
+  opt :redis_section, "Redis INFO section", :type => String, :multi => true, :default => 'default'
+  opt :redis_collection_whitelist_pattern, "Redis collection whitelist", :type => String, :default => 'yprofile.*'
+
+  STRING_VALUES = %w{ redis_version redis_git_sha1 redis_mode os
+                      multiplexing_api gcc_version run_id used_memory_human
+                      used_memory_peak_human mem_allocator
+                      rdb_last_bgsave_status aof_last_bgrewrite_status role }
+
+  def initialize
+    options = if opts[:redis_url] != ''
+                { :url => opts[:redis_url] }
+              elsif opts[:redis_socket] != ''
+                { :path => opts[:redis_socket] }
+              else
+                { :host => opts[:redis_host], :port => opts[:redis_port] }
+              end
+    @redis = ::Redis.new(options)
+    @redis.auth(opts[:redis_password]) unless opts[:redis_password] == ''
+    @section = opts[:redis_section]
+    @collectionWhiteList = opts[:redis_collection_whitelist_pattern]
+  end
+
+  def tick
+    begin
+      p "tick #{@collectionWhiteList}"
+      @redis.keys(@collectionWhiteList).each do |property, value|
+      	   data = {
+            :host    => opts[:redis_host].dup,
+            :service => "redis #{property}",
+            :tags    => ['redis']
+          }
+      	  p "Bucket matching #{property}"
+          bucketType =  @redis.type(property.to_s)
+      	  if 'zset' == bucketType
+      	  	reportSetLength property, data
+      	  elsif 'hash' == bucketType then
+   			reportHashLength property, data
+		  else
+             p 'ERR Unsupported collection type #{property}'
+      	  end
+
+          if property == "run_id"
+            data[:metric] = 0
+          end
+          report(data)
+        end
+      end
+    rescue ::Redis::CommandError => e
+      if e.message == "ERR operation not permitted"
+        @redis.auth(opts[:redis_password]) unless opts[:redis_password] == ''
+      end
+    #end
+
+  end
+
+  def reportSetLength( setName, notification )
+  	begin
+   	p 'reportSetLength'
+   	length = @redis.zlexcount(setName,'-', '+')
+  		notification[:metric] = length.to_s
+  		notification[:state] = length.to_s
+  		notification[:description] = "Redis set #{setName} length"
+  	p 'length '+length.to_s
+  	rescue Exception => e
+  		p e
+  	end
+  end
+
+  def reportHashLength( hashName, notification )
+  	begin
+   	p 'reportHashLength'
+   	length = @redis.hlen(hashName)
+  		notification[:metric] = length.to_s
+  		notification[:state] = length.to_s
+  		notification[:description] = "Redis hash #{hashName} length"
+  	p 'length '+length.to_s
+  	rescue Exception => e
+  		p e
+  	end
+  end
+
+end
+
+Riemann::Tools::RedisDynamoExtension.run

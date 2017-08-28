@@ -21,3 +21,8 @@ Multiple --redis-sections can by specified, for example if you want to monitor b
 ``` bash
 riemann-redis --redis-section "Replication" --redis-section "Memory"
 ```
+
+Dynomite extension
+===========
+
+TO BE ADDED
