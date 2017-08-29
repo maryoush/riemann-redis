@@ -41,7 +41,7 @@ class Riemann::Tools::RedisDynamoExtension
       @redis.keys(@collectionWhiteList).each do |property, value|
       	   data = {
             :host    => opts[:redis_host].dup,
-            :service => "#{property}",
+            :service => "redis_collection #{property}",
             :state   => "ok",
             :tags    => nil
           }

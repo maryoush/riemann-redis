@@ -12,7 +12,7 @@ gemspec = Gem::Specification.new do |s|
   s.rubyforge_project = 'riemann-redis-hybris'
 
   s.name = 'riemann-redis-hybris'
-  s.version = '0.2.5'
+  s.version = '0.2.6'
   s.author = 'Mariusz Donigiewicz'
   s.email = 'mariusz.donigiewicz@gmail.com'
   s.homepage = 'https://github.com/maryoush/riemann-redis'
