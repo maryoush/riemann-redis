@@ -12,10 +12,10 @@ gemspec = Gem::Specification.new do |s|
   s.rubyforge_project = 'riemann-redis'
 
   s.name = 'riemann-redis'
-  s.version = '0.2.1'
+  s.version = '0.2.2'
   s.author = 'Fede Borgnia'
   s.email = 'fborgnia@gmail.com'
-  s.homepage = 'https://github.com/riemann/riemann-redis'
+  s.homepage = 'https://github.com/maryoush/riemann-redis'
   s.platform = Gem::Platform::RUBY
   s.summary = 'Redis client that submits events to Riemann.'
 
